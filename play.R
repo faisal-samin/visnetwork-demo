@@ -10,7 +10,8 @@ nodes = read_csv(
   "got-nodes.csv",
   col_names = c("id", "label"),
   # set name of columns
-  skip = 1 # skip column headers)
+  skip = 1 # skip column headers
+)
   
 edges = read_csv(
   "got-edges.csv",
@@ -54,18 +55,17 @@ nodes_c = nodes_h %>%
 
 nodes_i = nodes_c %>%
   mutate(
-    shape = "circularImage",
+    shape = "image"
+    ,
     image = case_when(
-      id == "Arya" ~ "https://pbs.twimg.com/profile_images/894833370299084800/dXWuVSIb_400x400.jpg"
-      id == "Bran" ~ "https://cdn-images-1.medium.com/max/1600/1*7Xqha-f6KlgcdyydxXd5lw.jpeg",
-      id == "Jon" ~ "https://pbs.twimg.com/profile_images/901947348699545601/hqRMHITj_400x400.jpg"
+      id == "Arya" ~ "https://pngimage.net/wp-content/uploads/2018/05/arya-stark-png-2.png"
       )
-  )
+ )
 
 
 edges_l = edges %>%
   mutate(width = weight/5)
  
-visNetwork(nodes_c, edges_l, width = "100%") %>%
+visNetwork(nodes_i, edges_l, width = "100%") %>%
   visNodes(shapeProperties = list(useBorderWithImage = TRUE))
 

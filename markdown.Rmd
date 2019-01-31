@@ -1,8 +1,11 @@
 ---
-title: "VisNetwork: an introduction"
+title: "VisNetwork: an introduction with Game of Thrones..."
 author: "Faisal Samin, Data Exploitation"
 date: "28/01/2019"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
@@ -12,41 +15,46 @@ library(visNetwork)
 library(DT)
 ```
 ```{r data, include=FALSE}
-nodes = read_csv(
+nodes_raw = read_csv(
   "got-nodes.csv",
   col_names = c("id", "label"),
   # set name of columns
   skip = 1 # skip column headers
   )
   
-edges = read_csv(
+edges_raw = read_csv(
   "got-edges.csv",
   col_names = c("from", "to", "weight"),
   skip = 1
 )
 ```
-```{r final_network, echo=FALSE}
-visNetwork(nodes,
-         edges,
-         height = "500px",
-         width = "100%")
+
+```{r preview, echo=FALSE}
+visNetwork(nodes_raw,
+           edges_raw,
+           height = "500px",
+           width = "100%")
 ```
 
 
-[VisNetwork](https://datastorm-open.github.io/visNetwork/) is a powerful, user-friendly R library which very quickly allows you to create network diagrams such as the one shown above. This markdown gives an overview of the basics as we construct the network above from scratch, starting from the raw data.
+[VisNetwork](https://datastorm-open.github.io/visNetwork/) is a powerful, flexible R library which very quickly allows you to create network diagrams such as the one shown above. This markdown gives an overview of the basics as we construct a network diagram from scratch, starting from the raw data.
 
+## Network diagrams
 ### Loading the required libraries 
 
 ```{r eval = FALSE}
 library(tidyverse)
 library(visNetwork)
+
+# if libraries are not installed:
+# install.packages("visNetwork")
 ```
 
 ### The data
 
 Creating network diagrams with VisNetwork requires two datasets:
 
-* a **nodes** data.frame with an *id* column - a list of all the nodes in the network, with their characteristics
+* a **nodes** data.frame with an *id* column - a list of all unique nodes in the network, with their characteristics
 
 * an **edges** data.frame *from* and *to* columns which link the *id* together - describes the relationships between the nodes
 
@@ -57,93 +65,102 @@ For more information, see here: https://github.com/melaniewalsh/sample-social-ne
 ***
 
 ```{r nodes, echo=FALSE}
-datatable(nodes,
+datatable(nodes_raw,
           caption = 'Table 1: Nodes dataset',
-          class = 'cell-border stripe',
-          rownames = FALSE
-)
-```
-
-***
-
-```{r edges, echo = FALSE}
-datatable(edges,
-          caption = 'Table 2: Edges dataset',
-          class = 'cell-border stripe',
-          rownames = FALSE
-          )
-```
-
-### Our first network 
-
-We load in these two datasets and then load them into the visNetwork function.
-
-```{r first_network, message=FALSE, warning=FALSE}
-
-# Load in the nodes data
-nodes = read_csv(
-  "got-nodes.csv",
-  col_names = c("id", "label"), # set name of columns to conform to requirements
-  skip = 1 # skip existing column headers
-  )
-
-# Load in the edges data
-edges = read_csv(
-  "got-edges.csv",
-  col_names = c("from", "to", "weight"),
-  skip = 1
-)
-
-# Generate the default network diagram
-visNetwork(nodes,
-           edges,
-           width = "100%")
-```
-
-### Customising the nodes
-
-It's difficult to make sense of the network at present, it would help if we could add colours to represent characters. We can do this within the dataset. Let's highlight the two key houses, the Starks and the Lannisters. 
-
-```{r network_colours, message=FALSE, warning=FALSE}
-nodes2 = nodes %>%
-  mutate(
-    # Creating a column for the Stark and Lannister houses
-    house = case_when(
-    id %in% c("Arya", "Bran", "Jon", "Catelyn", "Robb", "Sansa", "Eddard") ~ "Stark",
-    id %in% c("Tywin", "Tyrion", "Jaime", "Cersei") ~ "Lannister"
-    ),
-    # Colouring the nodes
-    color = case_when(
-    house == "Stark" ~ "slategray",
-    house == "Lannister" ~ "firebrick",
-    TRUE ~ "lightgrey"
-    ),
-    # Sizing the nodes
-    size = case_when(
-    house %in% c("Stark", "Lannister") ~ 40,
-    TRUE ~ 10
-    ),
-    # Amending font size for Starks and Lannisters
-    font.size = case_when(
-    house %in% c("Stark", "Lannister") ~ 50,
-    TRUE ~ 15
-  )
-  )
-```
-
-```{r nodes2, echo=FALSE}
-datatable(nodes2,
-          caption = 'Table 3: Nodes dataset with additional feautures',
           class = 'cell-border stripe',
           rownames = FALSE,
           options = list(searching = FALSE)
 )
 ```
 
+***
+
+```{r edges, echo = FALSE}
+datatable(edges_raw,
+          caption = 'Table 2: Edges dataset',
+          class = 'cell-border stripe',
+          rownames = FALSE
+          )
+```
+
+***
+
+### Our first network 
+
+Upon reading these two datasets, we then load them into the visNetwork function as follows...
+
+```{r first_network, message=FALSE, warning=FALSE}
+
+# Load in the nodes data
+nodes_raw = read_csv(
+  "got-nodes.csv", # name of file saved in the working directory
+  col_names = c("id", "label"), # set name of columns to conform to requirements
+  skip = 1 # skip existing column headers
+  )
+
+# Load in the edges data
+edges_raw = read_csv(
+  "got-edges.csv",
+  col_names = c("from", "to", "weight"),
+  skip = 1
+)
+
+# Generate the default network diagram
+visNetwork(nodes_raw,
+           edges_raw,
+           width = "100%")
+```
+
+### Customising the nodes
+
+It's difficult to make sense of the network at present, how can we make this more useful? 
+
+Let's highlight a few key characters by adding columns to the nodes dataset... 
+
+```{r customising_nodes, message=FALSE, warning=FALSE}
+nodes = nodes_raw %>% # pipe: pass in code *before* the pipe to the code *after* the pipe
+  mutate(
+    # Creating a column for the Stark, Lannister and Targaryen houses
+    house = case_when(
+    id %in% c("Arya", "Bran", "Jon", "Catelyn", "Robb", "Sansa") ~ "Stark",
+    id %in% c("Tywin", "Tyrion", "Jaime", "Cersei") ~ "Lannister",
+    id %in% c("Daenerys") ~ "Targaryen"
+    ),
+    # Colouring the nodes
+    color = case_when(
+    house == "Stark" ~ "slategray",
+    house == "Lannister" ~ "gold",
+    house == "Targaryen" ~ "red",
+    TRUE ~ "lightgrey"
+    ),
+    # Sizing the nodes
+    size = case_when(
+    house %in% c("Stark", "Lannister", "Targaryen") ~ 40,
+    TRUE ~ 10
+    ),
+    # Amending font size for Starks and Lannisters
+    font.size = case_when(
+    house %in% c("Stark", "Lannister", "Targaryen") ~ 50,
+    TRUE ~ 15
+  )
+  )
+```
+
+```{r nodes_v2, echo=FALSE}
+datatable(nodes,
+          caption = 'Table 3: Nodes dataset with additional features',
+          class = 'cell-border stripe',
+          rownames = FALSE,
+          options = list(searching = FALSE)
+)
+```
+
+Let's read this enriched nodes dataset into the visNetwork function...
+
 ```{r network_v2, message=FALSE, warning=FALSE}
 # Generate the diagram
-visNetwork(nodes2,
-           edges,
+visNetwork(nodes, # Reading in the new nodes dataset
+           edges_raw,
            width = "100%")
 ```
 
@@ -152,28 +169,84 @@ visNetwork(nodes2,
 We can also customise the edges in a similiar fashion. Recalling that the strength of the relationships between characters is found in the **weight** field, we can represent this with the width of the edges.
 
 ```{r edges2, message=FALSE, warning=FALSE}
-edges2 = edges %>%
-  mutate(width = weight/5 + 1)
+edges = edges_raw %>%
+  mutate(width = weight/5 + 1) # Scales down the default weight values, + 1 for a minimum value
 ```
 
 ```{r network_v3, message=FALSE, warning=FALSE}
 # Generate the diagram
-visNetwork(nodes2,
-           edges2,
+visNetwork(nodes,
+           edges,
            width = "100%")
 ```
 
 ### Global options 
 
-Finally, we can set a few useful global options from within the visNetwork function.
+So far, we've been customising the network by adding new fields to our nodes and edges. There are a host of global options that can be set to the network as a whole. Let's add a few features to make the network more useful...
 
 ```{r}
-visNetwork(nodes2, edges2, width = "100%") %>% 
-  visNodes(shapeProperties = list(useBorderWithImage = TRUE)) %>%
-  visOptions(highlightNearest = TRUE,
-             nodesIdSelection = TRUE,
-             selectedBy = "house"
-  ) %>%
-  visExport(type = "png")
+visNetwork(nodes, edges, width = "100%") %>% 
+  visOptions(highlightNearest = TRUE, # higlights nearest nodes upon selection
+             nodesIdSelection = TRUE, # adds a dropdown for individual characters
+             selectedBy = "house") %>% # adds a dropdown to select houses
+  visExport(type = "png") # export functionality
 ```
 
+## Hierarchical diagrams
+
+With a few tweaks to the code and the data, visNetwork can also be used to construct network diagrams in a hierarchical layout.
+
+Let's load in a different set of data and review...
+
+```{r hierarchical_data, message=FALSE, warning=FALSE}
+
+# Load in the nodes data
+nodes_h = read_csv(
+  "got-nodes-hierarchy.csv",
+  col_names = c("id", "label"), # set name of columns to conform to requirements
+  skip = 1 # skip existing column headers
+  )
+
+# Load in the edges data
+edges_h = read_csv(
+  "got-edges-hierarchy.csv",
+  col_names = c("from", "to"), 
+  skip = 1
+)
+```
+
+***
+
+```{r h_nodes_data_table, echo=FALSE}
+datatable(nodes_h,
+          caption = 'Table 4: Nodes hierarchical dataset',
+          class = 'cell-border stripe',
+          rownames = FALSE,
+          options = list(searching = FALSE)
+)
+```
+
+***
+
+```{r h_edges_data_table, echo=FALSE}
+datatable(edges_h,
+          caption = 'Table 5: Edges hierarchical dataset',
+          class = 'cell-border stripe',
+          rownames = FALSE,
+          options = list(searching = FALSE)
+)
+```
+
+We can then construct the hierarchical diagram as follows...
+
+```{r network_hierarchical, message=FALSE, warning=FALSE}
+# Generate the diagram
+visNetwork(nodes_h,
+           edges_h,
+           width = "100%") %>%
+  visNodes(shape = "square") %>% # global options for shapes
+  visEdges(arrows = "to") %>% # direction of arrows
+  visHierarchicalLayout(sortMethod = "directed", # set hierarchical layout
+                        nodeSpacing = 500) %>%
+  visOptions(collapse = TRUE, manipulation = TRUE) # a few more options
+```
